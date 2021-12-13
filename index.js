@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken")
 
 app.use(cors({
     origin: "*"
-})) 
+}))
 app.use(express.json())
 
 //////////////
@@ -119,10 +119,7 @@ app.post("/feed", [authenthicate], async function(req, res) {
             let client = await mongoclient.connect(url);
             let db = client.db("blog");
             let get = await db.collection("current").find({}).toArray();
-            req.body.name = get.name
-            req.body.mail = get.mail;
-            req.body.insta = get.insta;
-            req.body.twitter = get.twitter;
+            req.body.name = get[0].name
             req.body.userid = req.userid;
             // console.log(req.body)
             // let now = new Date();
