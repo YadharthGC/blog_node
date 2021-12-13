@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken")
 
 app.use(cors({
     origin: "*"
-}))
+})) 
 app.use(express.json())
 
 //////////////
@@ -55,7 +55,7 @@ app.post("/register", async function(req, res) {
         console.log("erorrrr")
     }
 })
-var name, mail, dob, password, insta, twitter;
+var name, mail, dob, password, insta, twitter, ids, propic, aboutme;
 app.post("/login", async function(req, res) {
         try {
             console.log(req.body)
@@ -79,6 +79,22 @@ app.post("/login", async function(req, res) {
                     insta = user.insta;
                     twitter = user.twitter
                     dob = user.dob
+                    _id = user._id
+                    propic = user.propic
+                    aboutme = user.aboutme
+                    userid = req.userid
+                    let del = await db.collection("current").deleteMany({})
+                    let post = await db.collection("current").insertOne({
+                        name,
+                        mail,
+                        dob,
+                        insta,
+                        twitter,
+                        _id,
+                        propic,
+                        aboutme,
+                        userid
+                    })
                     res.json({
                         message: true,
                         token
@@ -97,15 +113,16 @@ app.post("/login", async function(req, res) {
         }
     })
     //////////////////////////////////////////
-    ////////////////////////////////////////
+    /////////////////////FEED///////////////////
 app.post("/feed", [authenthicate], async function(req, res) {
         try {
             let client = await mongoclient.connect(url);
             let db = client.db("blog");
-            req.body.name = name
-            req.body.mail = mail;
-            req.body.insta = insta;
-            req.body.twitter = twitter;
+            let get = await db.collection("current").find({}).toArray();
+            req.body.name = get.name
+            req.body.mail = get.mail;
+            req.body.insta = get.insta;
+            req.body.twitter = get.twitter;
             req.body.userid = req.userid;
             // console.log(req.body)
             // let now = new Date();
@@ -123,22 +140,17 @@ app.post("/feed", [authenthicate], async function(req, res) {
         }
     })
     //////////////////////////////////////////
-    ////////////////////////////////////////
+    ////////////////////PROFILE////////////////////
 app.get('/profile', async function(req, res) {
     try {
-        console.log(name,
-            mail,
-            dob,
-            insta,
-            twitter)
-        res.json({
-            name,
-            mail,
-            dob,
-            insta,
-            twitter
-        })
-    } catch (error) {}
+        let client = await mongoclient.connect(url);
+        let db = client.db("blog");
+        let get = await db.collection("current").find({}).toArray();
+        res.json(get);
+        await client.close();
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 app.get('/news', [authenthicate], async function(req, res) {
@@ -179,21 +191,72 @@ app.post("/id", async function(req, res) {
     } catch (error) {}
 })
 app.get("/getid", async function(req, res) {
+        try {
+            let client = await mongoclient.connect(url);
+            let db = client.db("blog");
+            let get = await db.collection("id").find({}).toArray();
+            let ids = get[0].did;
+            console.log(ids)
+            let got = await db.collection("feed").find({
+                _id: mongodb.ObjectId(ids)
+            }).toArray();
+            res.json(got);
+            console.log(got);
+            await client.close();
+        } catch (error) {}
+    })
+    /////////////////////////////////
+    ///////////////SETPIC////////////////////
+app.post("/propic", async function(req, res) {
+        try {
+            console.log(req.body.url)
+            let client = await mongoclient.connect(url);
+            let db = client.db("blog");
+            let put = await db.collection("registers").findOneAndUpdate({
+                _id: mongodb.ObjectId(req.body.did)
+            }, {
+                $set: {
+                    propic: req.body.url
+                }
+            })
+            let puta = await db.collection("current").findOneAndUpdate({
+                _id: mongodb.ObjectId(req.body.did)
+            }, {
+                $set: {
+                    propic: req.body.url
+                }
+            })
+            await client.close();
+        } catch (error) {
+
+        }
+    })
+    /////////////////////////////////
+    ///////////////AboutME////////////////////
+app.post("/aboutme", async function(req, res) {
     try {
+        console.log(req.body)
         let client = await mongoclient.connect(url);
         let db = client.db("blog");
-        let get = await db.collection("id").find({}).toArray();
-        let ids = get[0].did;
-        console.log(ids)
-        let got = await db.collection("feed").find({
-            _id: mongodb.ObjectId(ids)
-        }).toArray();
-        res.json(got);
-        console.log(got);
+        let put = await db.collection("registers").findOneAndUpdate({
+            _id: mongodb.ObjectId(req.body.did)
+        }, {
+            $set: {
+                aboutme: req.body.about
+            }
+        })
+        let puta = await db.collection("current").findOneAndUpdate({
+            _id: mongodb.ObjectId(req.body.did)
+        }, {
+            $set: {
+                aboutme: req.body.about
+            }
+        })
         await client.close();
-    } catch (error) {}
-})
+    } catch (error) {
 
+    }
+})
 
 
 ///////////////////////////////////////////
